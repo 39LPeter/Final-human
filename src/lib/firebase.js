@@ -1,21 +1,17 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+
+// Use import.meta.env to access variables from the .env file
 const firebaseConfig = {
-
-  apiKey: "AIzaSyB7Wfn-alReTxIb4BB_Z14Z3CcC7cV3ino",
-
-  authDomain: "humanrights-d797e.firebaseapp.com",
-
-  projectId: "humanrights-d797e",
-
-  storageBucket: "humanrights-d797e.firebasestorage.app",
-
-  messagingSenderId: "636457258620",
-
-  appId: "1:636457258620:web:422a61d82cc11332fcc3f9"
-
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
+
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);

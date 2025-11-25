@@ -10,9 +10,10 @@ import {
   MessageCircle, Sparkles, Send, Loader2, Copy
 } from 'lucide-react';
 
-// --- GEMINI API UTILITY ---
+// --- UTILITIES ---
+
 const callGemini = async (prompt, systemContext = "") => {
-  const apiKey = ""; // Provided by environment
+  const apiKey = ""; // Provided by environment at runtime
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
   
   const fullPrompt = `${systemContext}\n\nUser Query: ${prompt}`;
@@ -35,9 +36,8 @@ const callGemini = async (prompt, systemContext = "") => {
   }
 };
 
-// --- CUSTOM HOOKS & UTILS ---
+// --- HOOKS ---
 
-// Hook for scroll animations
 const useScrollAnimation = () => {
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
@@ -54,7 +54,8 @@ const useScrollAnimation = () => {
   }, []);
 };
 
-// --- GLOBAL STYLES (Simulating Advanced CSS) ---
+// --- STYLES ---
+
 const GlobalStyles = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;800&display=swap');
@@ -165,7 +166,61 @@ const SecureViewer = ({ children }) => (
   </div>
 );
 
-// --- ✨ AI CHATBOT COMPONENT ---
+// --- NEW COMPONENT: SPOTLIGHT CARD ---
+const SpotlightCard = ({ children, className = '', spotlightColor = 'rgba(255, 255, 255, 0.25)' }) => {
+  const divRef = useRef(null);
+  const [isFocused, setIsFocused] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [opacity, setOpacity] = useState(0);
+
+  const handleMouseMove = e => {
+    if (!divRef.current || isFocused) return;
+
+    const rect = divRef.current.getBoundingClientRect();
+    setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
+  const handleFocus = () => {
+    setIsFocused(true);
+    setOpacity(0.6);
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    setOpacity(0);
+  };
+
+  const handleMouseEnter = () => {
+    setOpacity(0.6);
+  };
+
+  const handleMouseLeave = () => {
+    setOpacity(0);
+  };
+
+  return (
+    <div
+      ref={divRef}
+      onMouseMove={handleMouseMove}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={`relative rounded-3xl border border-neutral-800 bg-neutral-900 overflow-hidden p-8 ${className}`}
+    >
+      <div
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 ease-in-out"
+        style={{
+          opacity,
+          background: `radial-gradient(circle at ${position.x}px ${position.y}px, ${spotlightColor}, transparent 80%)`
+        }}
+      />
+      {children}
+    </div>
+  );
+};
+
+// --- AI CHAT WIDGET ---
 const AIChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
@@ -197,7 +252,6 @@ const AIChatWidget = () => {
 
   return (
     <>
-      {/* Floating Button */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full shadow-2xl flex items-center justify-center text-white hover:scale-110 transition-transform animate-float"
@@ -206,10 +260,8 @@ const AIChatWidget = () => {
         {!isOpen && <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></span>}
       </button>
 
-      {/* Chat Window */}
       {isOpen && (
         <div className="fixed bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden flex flex-col h-[500px] animate-fadeIn">
-          {/* Header */}
           <div className="bg-gradient-to-r from-blue-900 to-indigo-900 p-4 text-white flex items-center gap-3">
             <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center"><Sparkles size={20} className="text-yellow-300"/></div>
             <div>
@@ -218,7 +270,6 @@ const AIChatWidget = () => {
             </div>
           </div>
 
-          {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -242,7 +293,6 @@ const AIChatWidget = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
           <form onSubmit={handleSend} className="p-3 bg-white border-t border-gray-100 flex gap-2">
             <input 
               value={input}
@@ -259,6 +309,8 @@ const AIChatWidget = () => {
     </>
   );
 };
+
+// --- NAVIGATION & FOOTER ---
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -279,6 +331,8 @@ const Navbar = () => {
     { name: "Resources", path: "/resources" },
   ];
 
+  const isActive = (path) => location.pathname === path;
+
   return (
     <nav className={`fixed w-full top-0 z-40 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-lg shadow-lg py-2' : 'bg-transparent py-4'}`}>
       <div className="max-w-7xl mx-auto px-6">
@@ -295,7 +349,7 @@ const Navbar = () => {
                 key={link.name} 
                 to={link.path} 
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                  location.pathname === link.path 
+                  isActive(link.path) 
                     ? 'bg-blue-50 text-blue-600 shadow-sm' 
                     : scrolled ? 'text-slate-600 hover:bg-slate-50' : 'text-white/90 hover:bg-white/10'
                 }`}
@@ -362,7 +416,6 @@ const Footer = () => (
             Forging a path towards a sustainable, equitable future through education, healthcare, and community empowerment.
           </p>
           <div className="flex gap-4">
-            {/* Social Placeholders */}
             {[1,2,3,4].map(i => (
               <div key={i} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all cursor-pointer">
                 <Globe size={18}/>
@@ -429,7 +482,7 @@ const Home = () => {
           <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
           <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
           <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
-          <img src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=2000&q=80" className="w-full h-full object-cover opacity-20" />
+          <img src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=2000&q=80" className="w-full h-full object-cover opacity-20" alt="Hero" />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent"></div>
         </div>
 
@@ -453,7 +506,6 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Scroll Indicator */}
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white/50 animate-bounce">
           <ChevronDown size={32}/>
         </div>
@@ -560,7 +612,7 @@ const Team = () => {
               {[1,2,3].map(i => (
                 <div key={i} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-50 group text-center">
                   <div className="w-24 h-24 mx-auto rounded-full bg-slate-100 mb-6 overflow-hidden border-4 border-white shadow-md group-hover:border-blue-100 transition-colors">
-                    <img src={`https://i.pravatar.cc/150?img=${idx * 3 + i + 10}`} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"/>
+                    <img src={`https://i.pravatar.cc/150?img=${idx * 3 + i + 10}`} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt="Team Member"/>
                   </div>
                   <h4 className="text-xl font-bold text-slate-900">Dr. Name Surname</h4>
                   <p className="text-blue-600 font-medium text-sm mb-4">{idx === 0 ? 'Board Member' : 'Head of Operations'}</p>
@@ -582,9 +634,15 @@ const Programs = () => {
   useScrollAnimation();
   
   const projects = [
-    { title: "Clean Water Initiative", loc: "Turkana", progress: 75, img: "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=800" },
-    { title: "Digital Hub", loc: "Mombasa", progress: 40, img: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800" },
-    { title: "Mobile Clinics", loc: "Kajiado", progress: 92, img: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800" }
+    { id: 1, title: "Clean Water Initiative", loc: "Turkana", progress: 75, img: "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=800" },
+    { id: 2, title: "Digital Hub", loc: "Mombasa", progress: 40, img: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800" },
+    { id: 3, title: "Mobile Clinics", loc: "Kajiado", progress: 92, img: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800" }
+  ];
+
+  const incomingProjects = [
+    { id: 4, title: "Reforestation 2025", date: "Jan 15, 2025", desc: "Planting 500,000 trees in Mau.", status: "Planning" },
+    { id: 5, title: "Girls in STEM", date: "Mar 1, 2025", desc: "Scholarships for 100 girls.", status: "Fundraising" },
+    { id: 6, title: "Urban Farming", date: "Jun 2025", desc: "Vertical gardens in settlements.", status: "Sourcing" }
   ];
 
   return (
@@ -600,31 +658,38 @@ const Programs = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {projects.map((p, i) => (
-              <div key={i} className="group bg-white rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 reveal reveal-delay-100">
-                <div className="h-56 relative overflow-hidden">
-                  <img src={p.img} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+            {projects.map((p) => (
+              /* Using the new SpotlightCard with Orange-Red color */
+              <SpotlightCard 
+                key={p.id} 
+                className="shadow-xl hover:shadow-2xl transition-all duration-300 reveal reveal-delay-100 p-0" // p-0 to reset padding for image
+                spotlightColor="rgba(255, 69, 0, 0.25)" // Orange Red Spotlight
+              >
+                {/* Card Content adapted for Dark Mode */}
+                <div className="h-56 relative overflow-hidden rounded-t-3xl -mx-8 -mt-8"> {/* Negative margin to offset card padding */}
+                  <img src={p.img} className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-700" alt={p.title} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-transparent to-transparent"></div>
                   <div className="absolute bottom-4 left-4 text-white">
-                    <div className="flex items-center gap-1 text-xs font-bold bg-black/30 backdrop-blur px-2 py-1 rounded mb-1 w-fit">
+                    <div className="flex items-center gap-1 text-xs font-bold bg-black/50 backdrop-blur px-2 py-1 rounded mb-1 w-fit">
                       <MapPin size={12}/> {p.loc}
                     </div>
                     <h4 className="font-bold text-lg">{p.title}</h4>
                   </div>
                 </div>
-                <div className="p-6">
-                  <div className="flex justify-between text-sm font-bold text-slate-500 mb-2">
+                
+                <div className="pt-6">
+                  <div className="flex justify-between text-sm font-bold text-neutral-400 mb-2">
                     <span>Progress</span>
                     <span>{p.progress}%</span>
                   </div>
-                  <div className="w-full h-2 bg-slate-100 rounded-full mb-6 overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all duration-1000" style={{width: `${p.progress}%`}}></div>
+                  <div className="w-full h-2 bg-neutral-800 rounded-full mb-6 overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full transition-all duration-1000" style={{width: `${p.progress}%`}}></div>
                   </div>
-                  <Link to="/donate" className="block w-full py-3 text-center rounded-xl border-2 border-slate-100 font-bold text-slate-600 hover:border-blue-600 hover:text-blue-600 transition-all">
+                  <Link to="/donate" className="block w-full py-3 text-center rounded-xl border border-neutral-700 font-bold text-neutral-300 hover:bg-neutral-800 hover:text-white transition-all">
                     Support This Project
                   </Link>
                 </div>
-              </div>
+              </SpotlightCard>
             ))}
           </div>
         </div>
@@ -637,21 +702,24 @@ const Programs = () => {
           </div>
           
           <div className="grid gap-6">
-            {[1, 2].map((item) => (
-              <div key={item} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-purple-200 transition-colors">
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-purple-50 rounded-2xl flex flex-col items-center justify-center text-purple-800 font-bold leading-tight">
-                    <span className="text-xs uppercase">Jan</span>
-                    <span className="text-xl">15</span>
+            {incomingProjects.map((item) => (
+              <div key={item.id} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-purple-200 transition-colors">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-1">
+                    <h4 className="text-xl font-bold text-slate-900">{item.title}</h4>
+                    <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-bold uppercase rounded-full">{item.status}</span>
                   </div>
-                  <div>
-                    <h4 className="text-xl font-bold text-slate-900">Reforestation Phase II</h4>
-                    <p className="text-slate-500">Mau Forest Complex • Target: 500k Trees</p>
-                  </div>
+                  <p className="text-slate-500">{item.desc}</p>
                 </div>
-                <button className="px-6 py-2 rounded-full bg-purple-50 text-purple-700 font-bold text-sm hover:bg-purple-100 transition-colors">
-                  Get Notified
-                </button>
+                <div className="flex items-center gap-6">
+                  <div className="text-right hidden md:block">
+                    <p className="text-xs text-gray-400 uppercase font-bold">Launch Date</p>
+                    <p className="text-purple-700 font-bold flex items-center gap-2 justify-end"><Clock size={16}/> {item.date}</p>
+                  </div>
+                  <button className="px-6 py-2 rounded-full bg-purple-50 text-purple-700 font-bold text-sm hover:bg-purple-100 transition-colors">
+                    Get Notified
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -663,7 +731,6 @@ const Programs = () => {
 
 const Donate = () => {
   const [activeAmt, setActiveAmt] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center py-24 px-4">
@@ -756,7 +823,7 @@ const Gallery = () => {
         <div className="columns-1 md:columns-3 gap-6 space-y-6 animate-fadeIn">
           {images.filter(img => activeCat === 'All' || img.cat === activeCat).map((img) => (
             <div key={img.id} className="break-inside-avoid group relative rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 cursor-zoom-in">
-              <img src={img.src} className="w-full transition-transform duration-700 group-hover:scale-110" />
+              <img src={img.src} className="w-full transition-transform duration-700 group-hover:scale-110" alt="Gallery Item" />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <div className="bg-white/20 backdrop-blur p-3 rounded-full text-white">
                   <Plus size={24}/>
@@ -778,7 +845,7 @@ const Resources = () => (
         <SecureViewer key={i}>
           <div className="flex bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow border border-gray-100 cursor-pointer">
             <div className="w-24 h-32 bg-slate-200 rounded-lg flex-shrink-0 overflow-hidden">
-              <img src={`https://source.unsplash.com/random/200x300?book&sig=${i}`} className="w-full h-full object-cover"/>
+              <img src={`https://source.unsplash.com/random/200x300?book&sig=${i}`} className="w-full h-full object-cover" alt="Resource Cover"/>
             </div>
             <div className="ml-6 flex flex-col justify-center">
               <span className="text-xs font-bold text-blue-500 uppercase tracking-wider mb-1">Magazine</span>
@@ -793,20 +860,18 @@ const Resources = () => (
   </div>
 );
 
-// --- ✨ ADMIN PAGE (With AI Content Studio) ---
 const Admin = () => {
   const [authMode, setAuthMode] = useState('login'); 
   const [isAuth, setIsAuth] = useState(false);
-  const [activeSection, setActiveSection] = useState('ai'); // Default to AI tool
+  const [activeSection, setActiveSection] = useState('ai');
   const [aiTopic, setAiTopic] = useState('');
   const [aiTone, setAiTone] = useState('Professional');
   const [generatedContent, setGeneratedContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Mock Auth
   const handleAuth = (e) => {
     e.preventDefault();
-    setIsAuth(true); // Simulate login
+    setIsAuth(true); // Mock login
   };
 
   const handleGenerate = async () => {
@@ -866,7 +931,6 @@ const Admin = () => {
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      {/* Sidebar */}
       <div className="w-64 bg-blue-900 text-white p-6 hidden md:block">
         <h2 className="text-xl font-bold mb-8 flex items-center gap-2"><Settings/> Admin</h2>
         <nav className="space-y-2">
@@ -882,7 +946,6 @@ const Admin = () => {
         </nav>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 p-8">
         {activeSection === 'ai' && (
           <div className="max-w-4xl mx-auto">
@@ -917,7 +980,7 @@ const Admin = () => {
                     >
                       <option>Professional</option>
                       <option>Urgent & Emotional</option>
-                      <option>Gratitude (Thank You Note)</option>
+                      <option>Gratitude</option>
                       <option>Social Media Post</option>
                     </select>
                   </div>
@@ -962,7 +1025,8 @@ const Admin = () => {
   );
 };
 
-function App() {
+// --- MAIN APP COMPONENT ---
+const App = () => {
   return (
     <Router>
       <GlobalStyles />
@@ -973,9 +1037,9 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/team" element={<Team />} />
             <Route path="/programs" element={<Programs />} />
-            <Route path="/donate" element={<Donate />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/resources" element={<Resources />} />
+            <Route path="/donate" element={<Donate />} />
             <Route path="/admin" element={<Admin />} />
           </Routes>
         </main>
@@ -984,6 +1048,6 @@ function App() {
       </div>
     </Router>
   );
-}
+};
 
 export default App;
